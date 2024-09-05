@@ -1,39 +1,77 @@
+import * as esbuild from 'esbuild';
+import fs from 'fs';
 import path from 'path';
-import { context } from 'esbuild';
-import glob from 'glob';
-import { promisify } from 'util';
 
-// 将 glob 转换为返回 Promise 的函数
-const globPromise = promisify(glob);
-
-// 定义入口文件规则
-const entryPoints = [
-  'src/sections/**/index.js',
-  'src/pages/**/index.js',
+// 定义规则
+const rules = [
+  {
+    srcDir: 'src/layout',
+    outDir: 'theme/assets',
+    filePattern: 'index.js',
+    outFileSuffix: '.min'
+  },
+  {
+    srcDir: 'src/sections',
+    outDir: 'theme/assets',
+    filePattern: 'index.js',
+    outFileSuffix: '.min'
+  },
+  {
+    srcDir: 'src/views',
+    outDir: 'theme/assets',
+    filePattern: 'index.js',
+    outFileSuffix: '.min'
+  }
 ];
 
-// 收集所有匹配的入口文件
-const files = await globPromise(entryPoints.flat().join('|'));
+// 递归遍历目录，找到所有符合条件的文件
+function findAllIndexFiles(dir, filePattern) {
+  let files = []
+  
+  const items = fs.readdirSync(dir, { withFileTypes: true })
+  
+  for (const item of items) {
+    const fullPath = path.join(dir, item.name)
 
-// 生成输出文件名
-const outputFiles = files.map(entry => {
-  const dirName = path.basename(path.dirname(entry)); // 获取父目录名
-  return {
-    entry,
-    output: `theme/assets/${dirName}-index.js`
-  };
-});
+    if (item.isDirectory()) {
+      files = files.concat(findAllIndexFiles(fullPath, filePattern));
+    } else if (item.isFile() && item.name === filePattern) {
+      files.push(fullPath)
+    }
+  }
+  
+  return files
+}
 
-// 创建 esbuild 上下文
-const ctx = await context({
-  entryPoints: outputFiles.map(file => file.entry),
+// 动态生成 entryPoints
+function generateEntryPoints(rules) {
+  const entryPoints = {}
+
+  rules.forEach(({ srcDir, outDir, filePattern, outFileSuffix }) => {
+    const indexFiles = findAllIndexFiles(srcDir, filePattern)
+    
+    indexFiles.forEach(filePath => {
+      // 计算相对于 srcDir 的路径
+      const relativePath = path.relative(srcDir, filePath);
+      // 去掉文件名（index.js）并替换路径分隔符为 -
+      const outFileName = relativePath
+        .replace(path.sep + filePattern, '') // 去掉 index.js
+        .replace(new RegExp(`\\${path.sep}`, 'g'), '-') + outFileSuffix // 替换路径分隔符为 -
+
+      entryPoints[outFileName] = filePath
+    });
+  });
+
+  return entryPoints
+}
+
+let ctx = await esbuild.context({
+  entryPoints: generateEntryPoints(rules),
   outdir: 'theme/assets',
   platform: 'node',
-  sourcemap: true,
-  bundle: true,
+  sourcemap: false,
+  bundle: true
 });
 
-// 监听文件变动
 await ctx.watch();
-
-console.log('正在监听文件变动...');
+console.log('watching...')

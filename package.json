@@ -4,7 +4,8 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "build": "node esbuild.dev.config.mjs"
+    "develop:script": "node esbuild.dev.config.mjs",
+    "develop:style": "node sass.dev.config.js"
   },
   "devDependencies": {
     "esbuild": "0.23.1"
