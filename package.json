@@ -4,11 +4,17 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
+    "develop": "yarn run develop:script && yarn run develop:style",
     "develop:script": "node esbuild.dev.config.mjs",
-    "develop:style": "node sass.dev.config.js"
+    "develop:style": "nodemon & yarn run develop:sass",
+    "develop:sass": "node sass.dev.config.js",
+    "postcss": "postcss theme/assets/*.css --config postcss.config.js --replace --no-map"
   },
   "devDependencies": {
-    "esbuild": "0.23.1"
+    "autoprefixer": "^10.4.20",
+    "esbuild": "0.23.1",
+    "postcss-import": "^16.1.0",
+    "tailwindcss": "^3.4.10"
   },
   "dependencies": {
     "glob": "^11.0.0",

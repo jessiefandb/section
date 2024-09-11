@@ -1,0 +1,5 @@
+{
+  "watch": ["theme/assets/*", "theme/sections/*.", "theme/snippets/*"],
+  "ext": "css,js,liquid",
+  "exec": "postcss theme/assets/*.css --config postcss.config.js --replace --no-map"
+}
